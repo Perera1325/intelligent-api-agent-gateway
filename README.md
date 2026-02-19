@@ -1,58 +1,66 @@
-!\[Python](https://img.shields.io/badge/Python-3.11-blue)
-
-!\[Flask](https://img.shields.io/badge/Flask-API-black)
-
-!\[Architecture](https://img.shields.io/badge/Microservices-Enabled-green)
-
-!\[AI](https://img.shields.io/badge/AI-Orchestrator-orange)
+Intelligent API Agent Gateway
 
 
 
-🚀 Intelligent API Agent Gateway
+A prototype implementation inspired by the evolution of APIs into intelligent AI-driven agents.
 
 
 
-A production-style microservices architecture that transforms traditional APIs into an intelligent, resilient AI-driven orchestration layer.
+This project demonstrates how traditional microservices can be orchestrated by an intelligent agent layer that performs contextual reasoning, decision-making, resilience handling, and explainability.
 
 
 
-🧠 Core Concept
+🎯 Vision Alignment
 
 
 
-Instead of manually calling multiple APIs, a single AI Agent:
+Inspired by the idea that:
 
 
 
-Calls Weather API
+APIs should evolve from static data providers into intelligent agents capable of reasoning, orchestration, and contextual enrichment.
 
 
 
-Calls Traffic API
+This project demonstrates that shift through:
 
 
 
-Calls Fleet API
+Intelligent orchestration layer
 
 
 
-Applies intelligent decision logic
+Context-aware decision logic
 
 
 
-Returns contextualized, explainable recommendations
+Resilience and retry handling
+
+
+
+Health monitoring
+
+
+
+Explainable output generation
+
+
+
+Metrics and caching
 
 
 
 🏗 Architecture
 
+
+
 Client
 
-   ↓
+↓
 
 AI Agent (Port 5004)
 
-   ↓
+↓
 
 Weather (5001)
 
@@ -86,7 +94,7 @@ Health Check Endpoints
 
 
 
-Caching Layer (TTL-based)
+TTL-based Caching
 
 
 
@@ -94,61 +102,73 @@ Metrics Endpoint
 
 
 
-Structured Logging
+Explainable Decision Engine
 
 
 
-Explainable Decision Output
+Resilient Microservices Architecture
 
 
 
-🧪 Example Request
-
-curl -H "x-api-key: vinod-secure-key" \\
-
-"http://localhost:5004/agent/optimize-delivery?city=Colombo\&capacity=1000"
+🧠 Why This Matters
 
 
 
-📊 Metrics Endpoint
-
-GET /metrics
+Traditional API systems require clients to:
 
 
 
-
-
-Tracks:
-
-
-
-Total Requests
+Call multiple services
 
 
 
-Cache Hits
+Combine responses manually
 
 
 
-Agent Executions
+Handle failures independently
 
 
 
-🏥 Health Endpoints
-
-/health (available on all backend services)
+This prototype demonstrates:
 
 
 
-🔮 Future Improvements
+Intelligent orchestration
 
 
 
-Circuit Breaker Pattern
+Contextual decision-making
 
 
 
-Docker Containerization
+Autonomous enrichment of API responses
+
+
+
+It represents a hybrid ecosystem where:
+
+
+
+APIs act as deterministic foundations
+
+AI Agent acts as intelligent orchestrator
+
+
+
+🔮 Future Roadmap
+
+
+
+Docker containerization
+
+
+
+Circuit breaker implementation
+
+
+
+LLM-based reasoning engine
 
 
 
@@ -156,13 +176,5 @@ Integration with WSO2 API Manager
 
 
 
-LLM-based dynamic reasoning
-
-
-
-Frontend Dashboard
-
-
-
-Prometheus + Grafana monitoring
+Monitoring dashboard
 
