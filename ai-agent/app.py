@@ -61,15 +61,64 @@ def safe_call_service(url, retries=2, timeout=3):
     return {"error": "Service unavailable"}
 
 # =========================================================
+# INTELLIGENT DECISION ENGINE (Stable Version)
+# =========================================================
+
+def intelligent_decision(weather, traffic, fleet, city, capacity):
+
+    explanation = []
+    decision = "Proceed with delivery"
+
+    if "error" in weather:
+        explanation.append("Weather service unavailable.")
+
+    if "error" in traffic:
+        explanation.append("Traffic service unavailable.")
+
+    if "error" in fleet:
+        explanation.append("Fleet service unavailable.")
+
+    if traffic.get("congestion_level") in ["High", "Severe"]:
+        decision = "Delay delivery"
+        explanation.append("High traffic congestion detected.")
+
+    if weather.get("condition") == "Stormy":
+        decision = "Delay delivery"
+        explanation.append("Severe weather conditions.")
+
+    if not fleet.get("available_vehicles") and "error" not in fleet:
+        decision = "Delivery not possible"
+        explanation.append("No available vehicles with required capacity.")
+
+    if not explanation:
+        explanation.append("All systems normal.")
+
+    return {
+        "decision": decision,
+        "explanation": explanation
+    }
+
+# =========================================================
 # ROOT
 # =========================================================
 
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({
-        "service": "AI Agent Orchestrator",
+        "service": "AI Agent Orchestrator (Stable Mode)",
         "status": "Running",
         "timestamp": datetime.datetime.now().isoformat()
+    })
+
+# =========================================================
+# HEALTH
+# =========================================================
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({
+        "service": "AI Agent",
+        "status": "healthy"
     })
 
 # =========================================================
@@ -101,9 +150,7 @@ def optimize_delivery():
 
     cache_key = f"{city}-{capacity}"
 
-    # =============================
     # CACHE CHECK
-    # =============================
     if cache_key in cache:
         cached_data, timestamp = cache[cache_key]
         if time.time() - timestamp < CACHE_TTL:
@@ -113,10 +160,7 @@ def optimize_delivery():
 
     metrics["agent_executions"] += 1
 
-    # =============================
-    # CALL SERVICES SAFELY
-    # =============================
-
+    # CALL SERVICES
     weather_url = registry["weather_service"]["base_url"] + registry["weather_service"]["endpoint"]
     traffic_url = registry["traffic_service"]["base_url"] + registry["traffic_service"]["endpoint"] + f"?city={city}"
     fleet_url = registry["fleet_service"]["base_url"] + registry["fleet_service"]["endpoint"] + f"?capacity={capacity}"
@@ -125,33 +169,8 @@ def optimize_delivery():
     traffic_data = safe_call_service(traffic_url)
     fleet_data = safe_call_service(fleet_url)
 
-    # =============================
-    # DECISION LOGIC
-    # =============================
-
-    reasons = []
-    recommendation = "Proceed with delivery"
-
-    if "error" in weather_data:
-        reasons.append("Weather service unavailable")
-
-    if "error" in traffic_data:
-        reasons.append("Traffic service unavailable")
-
-    if "error" in fleet_data:
-        reasons.append("Fleet service unavailable")
-
-    if traffic_data.get("congestion_level") in ["High", "Severe"]:
-        recommendation = "Delay delivery"
-        reasons.append("High traffic congestion")
-
-    if weather_data.get("condition") == "Stormy":
-        recommendation = "Delay delivery"
-        reasons.append("Severe weather conditions")
-
-    if not fleet_data.get("available_vehicles") and "error" not in fleet_data:
-        recommendation = "Delivery not possible"
-        reasons.append("No available vehicles")
+    # INTELLIGENT DECISION
+    decision_result = intelligent_decision(weather_data, traffic_data, fleet_data, city, capacity)
 
     response_data = {
         "input": {
@@ -161,15 +180,11 @@ def optimize_delivery():
         "weather": weather_data,
         "traffic": traffic_data,
         "fleet": fleet_data,
-        "decision": recommendation,
-        "explanation": reasons,
+        "agent_decision": decision_result,
         "generated_at": datetime.datetime.now().isoformat()
     }
 
-    # =============================
-    # STORE IN CACHE
-    # =============================
-
+    # STORE CACHE
     cache[cache_key] = (response_data, time.time())
 
     logging.info("Agent execution completed")
