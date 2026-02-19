@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "properties": {
+    "city": {
+      "type": "string"
+    },
+    "congestion_level": {
+      "type": "string",
+      "enum": ["Low", "Moderate", "High", "Severe"]
+    },
+    "average_speed_kmh": {
+      "type": "number"
+    },
+    "accident_reports": {
+      "type": "number"
+    },
+    "road_closures": {
+      "type": "number"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "city",
+    "congestion_level",
+    "average_speed_kmh"
+  ]
+}
