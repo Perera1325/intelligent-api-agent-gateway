@@ -1,180 +1,295 @@
 Intelligent API Agent Gateway
 
+From Traditional APIs to Intelligent Agents
 
+Overview
 
-A prototype implementation inspired by the evolution of APIs into intelligent AI-driven agents.
+This project is a working prototype that demonstrates how traditional API-based integrations can evolve into intelligent, decision-making agents.
 
+Inspired by the architectural vision of APIs transforming into AI-powered agents, this system goes beyond simple data aggregation. Instead of returning raw API responses, the agent interprets, contextualizes, and synthesizes data from multiple backend services to produce actionable decisions.
 
+The goal of this project is to model the transition from deterministic API orchestration to intelligent orchestration — a foundational concept in the evolution of digital ecosystems.
 
-This project demonstrates how traditional microservices can be orchestrated by an intelligent agent layer that performs contextual reasoning, decision-making, resilience handling, and explainability.
+Architectural Vision
 
+Traditional API architectures focus on:
 
+Data exchange
 
-🎯 Vision Alignment
+Request/response communication
 
+Deterministic integration
 
+This project introduces an additional layer:
 
-Inspired by the idea that:
+Contextual reasoning
 
+Decision synthesis
 
+Fault-aware orchestration
 
-APIs should evolve from static data providers into intelligent agents capable of reasoning, orchestration, and contextual enrichment.
+Adaptive service handling
 
+Rather than acting as a gateway, the AI Agent acts as an orchestrator that:
 
+Combines weather, traffic, and fleet data
 
-This project demonstrates that shift through:
+Applies contextual business logic
 
+Produces operational decisions
 
+Handles partial failures intelligently
 
-Intelligent orchestration layer
+This reflects the shift from APIs as contracts to agents as problem-solvers.
 
+System Architecture
 
+The system consists of four independent services:
 
-Context-aware decision logic
+Weather Service (Port 5001)
 
+Traffic Service (Port 5002)
 
+Fleet Service (Port 5003)
 
-Resilience and retry handling
+AI Agent Orchestrator (Port 5004)
 
+The AI Agent:
 
+Discovers services via a service registry
+
+Calls backend APIs
+
+Applies retry and timeout mechanisms
+
+Implements circuit breaker protection
+
+Caches responses
+
+Produces contextual delivery decisions
+
+The architecture follows microservices principles with clear service boundaries and independent runtime environments.
+
+Key Features
+Intelligent Orchestration
+
+The agent does not simply aggregate responses. It analyzes:
+
+Traffic congestion levels
+
+Weather conditions
+
+Fleet capacity availability
+
+It then produces a structured decision:
+
+Proceed with delivery
+
+Delay delivery
+
+Delivery not possible
+
+Along with an explanation of reasoning.
+
+Circuit Breaker Pattern
+
+To prevent cascading failures:
+
+Services are monitored for repeated failures
+
+After a threshold, the circuit opens
+
+Calls are temporarily blocked
+
+Recovery is attempted after cooldown
+
+This models resilience patterns used in enterprise API platforms.
+
+Retry and Timeout Handling
+
+Each service call includes:
+
+Configurable retry attempts
+
+Timeout protection
+
+Graceful degradation
+
+If one service fails, the system continues operating with partial data.
+
+In-Memory Caching
+
+To improve performance:
+
+Responses are cached for a configurable TTL
+
+Repeated identical requests are served from cache
+
+Cache hits are tracked in metrics
+
+Metrics and Observability
+
+The agent exposes:
+
+Total request count
+
+Cache hits
+
+Agent execution count
+
+Circuit breaker state
+
+This enables basic observability and runtime monitoring.
+
+Dashboard Interface
+
+A lightweight web dashboard provides:
+
+Metrics visualization
+
+Circuit breaker status
 
 Health monitoring
 
+Real-time delivery optimization testing
 
+The dashboard demonstrates how intelligent agents can be made accessible to end users and product teams.
 
-Explainable output generation
+How This Relates to API Evolution
 
+Traditional API management focuses on:
 
+Security
 
-Metrics and caching
+Rate limiting
 
+Monetization
 
+Governance
 
-🏗 Architecture
+This prototype explores the next layer:
 
+Agents that consume APIs
 
+Agents that interpret and enrich API responses
 
-Client
+Agents that orchestrate workflows dynamically
 
-↓
+Agents that provide reasoning outputs instead of raw data
 
-AI Agent (Port 5004)
+This hybrid model suggests a future where:
 
-↓
+APIs remain deterministic foundations
 
-Weather (5001)
+Intelligent agents operate as orchestration layers
 
-Traffic (5002)
+API gateways evolve to support both models
 
-Fleet (5003)
+Running the Project
+Option 1: Manual (4 Terminals)
 
+Start each backend service:
 
+Weather Service:
 
-🔐 Features
+cd backend-apis/weather-service
+python -m venv venv
+source venv/Scripts/activate
+pip install Flask requests
+python app.py
 
 
+Traffic Service:
 
-API Key Authentication
+cd backend-apis/traffic-service
+python -m venv venv
+source venv/Scripts/activate
+pip install Flask requests
+python app.py
 
 
+Fleet Service:
 
-Service Registry Pattern
+cd backend-apis/fleet-service
+python -m venv venv
+source venv/Scripts/activate
+pip install Flask requests
+python app.py
 
 
+AI Agent:
 
-Retry + Timeout Handling
+cd ai-agent
+python -m venv venv
+source venv/Scripts/activate
+pip install Flask requests
+python app.py
 
 
+Access the dashboard at:
 
-Partial Failure Tolerance
+http://localhost:5004/dashboard
 
+Option 2: Docker
+docker-compose up --build
 
 
-Health Check Endpoints
+This runs all services in isolated containers.
 
+Example API Call
+curl -H "x-api-key: vinod-secure-key" \
+"http://localhost:5004/agent/optimize-delivery?city=Colombo&capacity=1000"
 
 
-TTL-based Caching
+Response includes:
 
+Weather data
 
+Traffic data
 
-Metrics Endpoint
+Fleet availability
 
+Agent decision
 
+Decision explanation
 
-Explainable Decision Engine
+Future Enhancements
 
+This prototype can be extended with:
 
+LLM-based reasoning engines
 
-Resilient Microservices Architecture
+Persistent storage
 
+API gateway integration
 
+Authentication and token management
 
-🧠 Why This Matters
+Distributed tracing
 
+Agent marketplace model
 
+WSO2 API Manager integration
 
-Traditional API systems require clients to:
+Purpose of This Project
 
+This is not just a CRUD microservice demo.
 
+It is a practical exploration of:
 
-Call multiple services
+Intelligent API orchestration
 
+Resilient distributed systems
 
+Hybrid API-agent ecosystems
 
-Combine responses manually
+The next generation of API management models
 
+It demonstrates how APIs can evolve from static data providers into intelligent, adaptive agents that actively participate in decision-making.
 
+Author
 
-Handle failures independently
-
-
-
-This prototype demonstrates:
-
-
-
-Intelligent orchestration
-
-
-
-Contextual decision-making
-
-
-
-Autonomous enrichment of API responses
-
-
-
-It represents a hybrid ecosystem where:
-
-
-
-APIs act as deterministic foundations
-
-AI Agent acts as intelligent orchestrator
-
-
-
-🔮 Future Roadmap
-
-
-
-Docker containerization
-
-
-
-Circuit breaker implementation
-
-
-
-LLM-based reasoning engine
-
-
-
-Integration with WSO2 API Manager
-
-
-
-Monitoring dashboard
+Vinod Perera
+Computer Science & Electrical Engineering Undergraduate
+GitHub: https://github.com/Perera1325
 
