@@ -23,6 +23,14 @@ def home():
         "timestamp": datetime.datetime.now().isoformat()
     })
 
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({
+        "service": "Fleet Service",
+        "status": "healthy"
+    })
+
+
 @app.route("/fleet/available", methods=["GET"])
 def get_available_vehicles():
     required_capacity = request.args.get("capacity")

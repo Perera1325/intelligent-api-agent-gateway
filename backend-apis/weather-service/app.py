@@ -12,6 +12,13 @@ def home():
         "timestamp": datetime.datetime.now().isoformat()
     })
 
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({
+        "service": "Weather Service",
+        "status": "healthy"
+    })
+
 
 @app.route("/weather", methods=["GET"])
 def get_weather():

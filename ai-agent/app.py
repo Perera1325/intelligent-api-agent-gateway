@@ -7,32 +7,28 @@ import time
 
 app = Flask(__name__)
 
-# ==============================
-# CONFIG
-# ==============================
+# =========================================================
+# CONFIGURATION
+# =========================================================
 
 API_KEY = "vinod-secure-key"
-
-# Simple in-memory cache
-cache = {}
 CACHE_TTL = 60  # seconds
+cache = {}
 
-# Metrics
 metrics = {
     "total_requests": 0,
     "cache_hits": 0,
     "agent_executions": 0
 }
 
-# Structured logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s"
 )
 
-# ==============================
+# =========================================================
 # LOAD SERVICE REGISTRY
-# ==============================
+# =========================================================
 
 def load_registry():
     with open("../service-registry.json", "r") as file:
@@ -40,19 +36,33 @@ def load_registry():
 
 registry = load_registry()
 
-# ==============================
-# AUTH DECORATOR
-# ==============================
+# =========================================================
+# AUTHENTICATION
+# =========================================================
 
-def authenticate(request):
-    key = request.headers.get("x-api-key")
-    if key != API_KEY:
-        return False
-    return True
+def authenticate(req):
+    key = req.headers.get("x-api-key")
+    return key == API_KEY
 
-# ==============================
+# =========================================================
+# SAFE SERVICE CALL (Retry + Timeout)
+# =========================================================
+
+def safe_call_service(url, retries=2, timeout=3):
+    for attempt in range(retries):
+        try:
+            response = requests.get(url, timeout=timeout)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logging.warning(f"Attempt {attempt+1} failed for {url}: {str(e)}")
+            time.sleep(1)
+
+    return {"error": "Service unavailable"}
+
+# =========================================================
 # ROOT
-# ==============================
+# =========================================================
 
 @app.route("/", methods=["GET"])
 def home():
@@ -62,17 +72,17 @@ def home():
         "timestamp": datetime.datetime.now().isoformat()
     })
 
-# ==============================
-# METRICS ENDPOINT
-# ==============================
+# =========================================================
+# METRICS
+# =========================================================
 
 @app.route("/metrics", methods=["GET"])
 def get_metrics():
     return jsonify(metrics)
 
-# ==============================
-# MAIN AGENT
-# ==============================
+# =========================================================
+# MAIN AGENT ENDPOINT
+# =========================================================
 
 @app.route("/agent/optimize-delivery", methods=["GET"])
 def optimize_delivery():
@@ -91,9 +101,9 @@ def optimize_delivery():
 
     cache_key = f"{city}-{capacity}"
 
-    # ==============================
-    # CHECK CACHE
-    # ==============================
+    # =============================
+    # CACHE CHECK
+    # =============================
     if cache_key in cache:
         cached_data, timestamp = cache[cache_key]
         if time.time() - timestamp < CACHE_TTL:
@@ -103,38 +113,33 @@ def optimize_delivery():
 
     metrics["agent_executions"] += 1
 
-    # ==============================
-    # CALL WEATHER
-    # ==============================
+    # =============================
+    # CALL SERVICES SAFELY
+    # =============================
+
     weather_url = registry["weather_service"]["base_url"] + registry["weather_service"]["endpoint"]
-    weather_data = requests.get(weather_url).json()
+    traffic_url = registry["traffic_service"]["base_url"] + registry["traffic_service"]["endpoint"] + f"?city={city}"
+    fleet_url = registry["fleet_service"]["base_url"] + registry["fleet_service"]["endpoint"] + f"?capacity={capacity}"
 
-    # ==============================
-    # CALL TRAFFIC
-    # ==============================
-    traffic_url = (
-        registry["traffic_service"]["base_url"] +
-        registry["traffic_service"]["endpoint"] +
-        f"?city={city}"
-    )
-    traffic_data = requests.get(traffic_url).json()
+    weather_data = safe_call_service(weather_url)
+    traffic_data = safe_call_service(traffic_url)
+    fleet_data = safe_call_service(fleet_url)
 
-    # ==============================
-    # CALL FLEET
-    # ==============================
-    fleet_url = (
-        registry["fleet_service"]["base_url"] +
-        registry["fleet_service"]["endpoint"] +
-        f"?capacity={capacity}"
-    )
-    fleet_data = requests.get(fleet_url).json()
-
-    # ==============================
-    # INTELLIGENT DECISION
-    # ==============================
+    # =============================
+    # DECISION LOGIC
+    # =============================
 
     reasons = []
     recommendation = "Proceed with delivery"
+
+    if "error" in weather_data:
+        reasons.append("Weather service unavailable")
+
+    if "error" in traffic_data:
+        reasons.append("Traffic service unavailable")
+
+    if "error" in fleet_data:
+        reasons.append("Fleet service unavailable")
 
     if traffic_data.get("congestion_level") in ["High", "Severe"]:
         recommendation = "Delay delivery"
@@ -144,7 +149,7 @@ def optimize_delivery():
         recommendation = "Delay delivery"
         reasons.append("Severe weather conditions")
 
-    if not fleet_data.get("available_vehicles"):
+    if not fleet_data.get("available_vehicles") and "error" not in fleet_data:
         recommendation = "Delivery not possible"
         reasons.append("No available vehicles")
 
@@ -161,9 +166,9 @@ def optimize_delivery():
         "generated_at": datetime.datetime.now().isoformat()
     }
 
-    # ==============================
+    # =============================
     # STORE IN CACHE
-    # ==============================
+    # =============================
 
     cache[cache_key] = (response_data, time.time())
 
@@ -171,6 +176,9 @@ def optimize_delivery():
 
     return jsonify(response_data)
 
+# =========================================================
+# START SERVER
+# =========================================================
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5004, debug=True)
