@@ -1,3 +1,13 @@
+!\[Python](https://img.shields.io/badge/Python-3.11-blue)
+
+!\[Flask](https://img.shields.io/badge/Flask-API-black)
+
+!\[Architecture](https://img.shields.io/badge/Microservices-Enabled-green)
+
+!\[AI](https://img.shields.io/badge/AI-Orchestrator-orange)
+
+
+
 🚀 Intelligent API Agent Gateway
 
 
@@ -38,11 +48,11 @@ Returns contextualized, explainable recommendations
 
 Client
 
-&nbsp;  ↓
+   ↓
 
 AI Agent (Port 5004)
 
-&nbsp;  ↓
+   ↓
 
 Weather (5001)
 
