@@ -1,0 +1,14 @@
+{
+  "weather_service": {
+    "base_url": "http://localhost:5001",
+    "endpoint": "/weather"
+  },
+  "traffic_service": {
+    "base_url": "http://localhost:5002",
+    "endpoint": "/traffic"
+  },
+  "fleet_service": {
+    "base_url": "http://localhost:5003",
+    "endpoint": "/fleet/available"
+  }
+}

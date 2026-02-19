@@ -1,0 +1,17 @@
+[
+  {
+    "vehicle_id": "TRUCK-101",
+    "capacity_kg": 5000,
+    "status": "available"
+  },
+  {
+    "vehicle_id": "VAN-202",
+    "capacity_kg": 2000,
+    "status": "available"
+  },
+  {
+    "vehicle_id": "BIKE-303",
+    "capacity_kg": 50,
+    "status": "maintenance"
+  }
+]

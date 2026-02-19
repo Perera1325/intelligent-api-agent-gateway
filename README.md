@@ -12,11 +12,11 @@ Architecture
 
 backend-apis/
 
-&nbsp;   weather-service/
+    weather-service/
 
-&nbsp;   traffic-service/
+    traffic-service/
 
-&nbsp;   fleet-service/
+    fleet-service/
 
 
 
@@ -35,6 +35,18 @@ Day 1 Progress
 \- Weather service created
 
 \- Project structure initialized
+
+
+
+Day 3 Progress
+
+\- Fleet service created
+
+\- Vehicle capacity filtering implemented
+
+\- Structured logging added
+
+\- Service registry created
 
 
 
