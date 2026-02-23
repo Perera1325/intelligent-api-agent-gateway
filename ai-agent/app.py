@@ -1,31 +1,50 @@
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-API_KEY = os.getenv("API_KEY")
-CACHE_TTL = int(os.getenv("CACHE_TTL", 60))from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template
 import requests
 import json
 import datetime
-import logging
 import time
+import uuid
+import os
+import logging
+from dotenv import load_dotenv
+
+# =========================================================
+# INITIALIZATION
+# =========================================================
+
+load_dotenv()
 
 app = Flask(__name__)
 
-# =========================================================
-# CONFIGURATION
-# =========================================================
+API_KEY = os.getenv("API_KEY", "vinod-secure-key")
+CACHE_TTL = int(os.getenv("CACHE_TTL", 60))
 
-API_KEY = "vinod-secure-key"
-CACHE_TTL = 60  # seconds
+SERVICE_REGISTRY_PATH = "../service-registry.json"
+
+FAILURE_THRESHOLD = 3
+COOLDOWN_TIME = 30
+RATE_LIMIT = 20
+RATE_WINDOW = 60
+
+# =========================================================
+# GLOBAL STATE
+# =========================================================
 
 cache = {}
+request_counts = {}
 
 metrics = {
     "total_requests": 0,
     "cache_hits": 0,
-    "agent_executions": 0
+    "agent_executions": 0,
+    "average_latency": 0,
+    "uptime_start": time.time()
+}
+
+circuit_breakers = {
+    "weather": {"failures": 0, "state": "CLOSED", "last_failure_time": None},
+    "traffic": {"failures": 0, "state": "CLOSED", "last_failure_time": None},
+    "fleet": {"failures": 0, "state": "CLOSED", "last_failure_time": None},
 }
 
 logging.basicConfig(
@@ -34,24 +53,11 @@ logging.basicConfig(
 )
 
 # =========================================================
-# CIRCUIT BREAKER CONFIG
-# =========================================================
-
-circuit_breakers = {
-    "weather": {"failures": 0, "state": "CLOSED", "last_failure_time": None},
-    "traffic": {"failures": 0, "state": "CLOSED", "last_failure_time": None},
-    "fleet": {"failures": 0, "state": "CLOSED", "last_failure_time": None},
-}
-
-FAILURE_THRESHOLD = 3
-COOLDOWN_TIME = 30  # seconds
-
-# =========================================================
 # LOAD SERVICE REGISTRY
 # =========================================================
 
 def load_registry():
-    with open("../service-registry.json", "r") as file:
+    with open(SERVICE_REGISTRY_PATH, "r") as file:
         return json.load(file)
 
 registry = load_registry()
@@ -61,47 +67,58 @@ registry = load_registry()
 # =========================================================
 
 def authenticate(req):
-    key = req.headers.get("x-api-key")
-    return key == API_KEY
+    return req.headers.get("x-api-key") == API_KEY
 
 # =========================================================
-# CIRCUIT BREAKER + SAFE SERVICE CALL
+# RATE LIMITING
+# =========================================================
+
+def check_rate_limit():
+    client_ip = request.remote_addr
+    current_time = time.time()
+
+    if client_ip not in request_counts:
+        request_counts[client_ip] = []
+
+    request_counts[client_ip] = [
+        t for t in request_counts[client_ip]
+        if current_time - t < RATE_WINDOW
+    ]
+
+    if len(request_counts[client_ip]) >= RATE_LIMIT:
+        return False
+
+    request_counts[client_ip].append(current_time)
+    return True
+
+# =========================================================
+# CIRCUIT BREAKER SERVICE CALL
 # =========================================================
 
 def safe_call_service(service_name, url, retries=2, timeout=3):
-
     breaker = circuit_breakers[service_name]
 
-    # If circuit is OPEN
     if breaker["state"] == "OPEN":
         if time.time() - breaker["last_failure_time"] < COOLDOWN_TIME:
-            logging.warning(f"Circuit OPEN for {service_name}")
-            return {"error": "Service temporarily disabled (circuit open)"}
+            return {"error": "Service temporarily unavailable (circuit open)"}
         else:
-            logging.info(f"Cooldown expired. Closing circuit for {service_name}")
             breaker["state"] = "CLOSED"
             breaker["failures"] = 0
 
-    for attempt in range(retries):
+    for _ in range(retries):
         try:
             response = requests.get(url, timeout=timeout)
             response.raise_for_status()
-
             breaker["failures"] = 0
-            breaker["state"] = "CLOSED"
-
             return response.json()
+        except Exception:
+            pass
 
-        except Exception as e:
-            logging.warning(f"{service_name} failed attempt {attempt+1}: {str(e)}")
-
-    # All retries failed
     breaker["failures"] += 1
     breaker["last_failure_time"] = time.time()
 
     if breaker["failures"] >= FAILURE_THRESHOLD:
         breaker["state"] = "OPEN"
-        logging.error(f"Circuit opened for {service_name}")
 
     return {"error": "Service unavailable"}
 
@@ -110,33 +127,23 @@ def safe_call_service(service_name, url, retries=2, timeout=3):
 # =========================================================
 
 def intelligent_decision(weather, traffic, fleet):
-
     explanation = []
     decision = "Proceed with delivery"
-
-    if "error" in weather:
-        explanation.append("Weather service unavailable.")
-
-    if "error" in traffic:
-        explanation.append("Traffic service unavailable.")
-
-    if "error" in fleet:
-        explanation.append("Fleet service unavailable.")
 
     if traffic.get("congestion_level") in ["High", "Severe"]:
         decision = "Delay delivery"
         explanation.append("High traffic congestion detected.")
 
-    if weather.get("condition") == "Stormy":
+    if weather.get("condition") in ["Stormy", "Heavy Rain"]:
         decision = "Delay delivery"
-        explanation.append("Severe weather conditions.")
+        explanation.append("Adverse weather conditions.")
 
-    if not fleet.get("available_vehicles") and "error" not in fleet:
+    if not fleet.get("available_vehicles"):
         decision = "Delivery not possible"
         explanation.append("No available vehicles with required capacity.")
 
     if not explanation:
-        explanation.append("All systems operating normally.")
+        explanation.append("All operational parameters are within normal range.")
 
     return {
         "decision": decision,
@@ -144,56 +151,66 @@ def intelligent_decision(weather, traffic, fleet):
     }
 
 # =========================================================
-# ROOT
+# ROUTES
 # =========================================================
 
-@app.route("/", methods=["GET"])
+@app.route("/")
 def home():
     return jsonify({
-        "service": "AI Agent Orchestrator",
-        "status": "Running",
-        "timestamp": datetime.datetime.now().isoformat()
+        "service": "Intelligent API Agent Gateway",
+        "version": "2.0.0",
+        "status": "running",
+        "timestamp": datetime.datetime.utcnow().isoformat()
     })
 
-# =========================================================
-# DASHBOARD ROUTE
-# =========================================================
-
-@app.route("/dashboard", methods=["GET"])
-def dashboard():
-    return render_template("dashboard.html")
-
-# =========================================================
-# HEALTH
-# =========================================================
-
-@app.route("/health", methods=["GET"])
+@app.route("/health")
 def health():
     return jsonify({
-        "service": "AI Agent",
         "status": "healthy",
         "circuit_breakers": circuit_breakers
     })
 
-# =========================================================
-# METRICS
-# =========================================================
-
-@app.route("/metrics", methods=["GET"])
+@app.route("/metrics")
 def get_metrics():
-    return jsonify(metrics)
+    uptime = round(time.time() - metrics["uptime_start"], 2)
+    return jsonify({
+        **metrics,
+        "uptime_seconds": uptime
+    })
+
+@app.route("/docs")
+def docs():
+    return jsonify({
+        "endpoint": "/agent/optimize-delivery",
+        "method": "GET",
+        "headers_required": ["x-api-key"],
+        "query_params": {
+            "city": "string",
+            "capacity": "integer"
+        }
+    })
+
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html")
 
 # =========================================================
 # MAIN AGENT ENDPOINT
 # =========================================================
 
-@app.route("/agent/optimize-delivery", methods=["GET"])
+@app.route("/agent/optimize-delivery")
 def optimize_delivery():
+
+    request_id = str(uuid.uuid4())
+    start_time = time.time()
 
     metrics["total_requests"] += 1
 
     if not authenticate(request):
         return jsonify({"error": "Unauthorized"}), 401
+
+    if not check_rate_limit():
+        return jsonify({"error": "Rate limit exceeded"}), 429
 
     city = request.args.get("city")
     capacity = request.args.get("capacity")
@@ -203,7 +220,6 @@ def optimize_delivery():
 
     cache_key = f"{city}-{capacity}"
 
-    # Check cache
     if cache_key in cache:
         cached_data, timestamp = cache[cache_key]
         if time.time() - timestamp < CACHE_TTL:
@@ -222,16 +238,18 @@ def optimize_delivery():
 
     decision_result = intelligent_decision(weather_data, traffic_data, fleet_data)
 
+    latency = round(time.time() - start_time, 3)
+    metrics["average_latency"] = latency
+
     response_data = {
-        "input": {
-            "city": city,
-            "capacity": capacity
-        },
+        "request_id": request_id,
+        "input": {"city": city, "capacity": capacity},
         "weather": weather_data,
         "traffic": traffic_data,
         "fleet": fleet_data,
         "agent_decision": decision_result,
-        "generated_at": datetime.datetime.now().isoformat()
+        "processing_time_seconds": latency,
+        "generated_at": datetime.datetime.utcnow().isoformat()
     }
 
     cache[cache_key] = (response_data, time.time())
