@@ -1,4 +1,10 @@
-from flask import Flask, request, jsonify, render_template
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+API_KEY = os.getenv("API_KEY")
+CACHE_TTL = int(os.getenv("CACHE_TTL", 60))from flask import Flask, request, jsonify, render_template
 import requests
 import json
 import datetime
