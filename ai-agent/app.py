@@ -1,3 +1,6 @@
+from middleware.request_id import attach_request_id
+from utils.logger import setup_logger
+from config.settings import Settings
 from flask import Flask, request, jsonify, render_template
 import requests
 import json
@@ -17,8 +20,8 @@ load_dotenv()
 
 app = Flask(__name__)
 
-API_KEY = os.getenv("API_KEY", "vinod-secure-key")
-CACHE_TTL = int(os.getenv("CACHE_TTL", 60))
+API_KEY = Settings.API_KEY
+CACHE_TTL = Settings.CACHE_TTL
 
 SERVICE_REGISTRY_PATH = "../service-registry.json"
 
