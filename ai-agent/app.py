@@ -2,6 +2,8 @@ from middleware.request_id import attach_request_id
 from utils.logger import setup_logger
 from config.settings import Settings
 from flask import Flask, request, jsonify, render_template
+from flasgger import Swagger
+swagger = Swagger(app)
 import requests
 import json
 import uuid
