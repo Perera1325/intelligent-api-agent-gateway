@@ -1,29 +1,23 @@
-from middleware.request_id import attach_request_id
-from utils.logger import setup_logger
-from config.settings import Settings
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, jsonify, request
 from flasgger import Swagger
-swagger = Swagger(app)
 import requests
-import json
-import uuid
-import datetime
-import time
-import uuid
-import os
-import logging
-from dotenv import load_dotenv
 
-# =========================================================
+from flask import Flask, jsonify, request
+from flasgger import Swagger
+from dotenv import load_dotenv
+import requests
+
+# ============================================
 # INITIALIZATION
-# =========================================================
+# ============================================
 
 load_dotenv()
 
 app = Flask(__name__)
+swagger = Swagger(app)
 
-API_KEY = Settings.API_KEY
-CACHE_TTL = Settings.CACHE_TTL
+API_KEY = "your_key_here"
+CACHE_TTL = 60
 
 SERVICE_REGISTRY_PATH = "../service-registry.json"
 
@@ -31,6 +25,21 @@ FAILURE_THRESHOLD = 3
 COOLDOWN_TIME = 30
 RATE_LIMIT = 20
 RATE_WINDOW = 60
+
+# ============================================
+# ROUTES
+# ============================================
+
+@app.route("/")
+def home():
+    return jsonify({"message": "Intelligent API Agent Running"})
+
+# ============================================
+# MAIN
+# ============================================
+
+if __name__ == "__main__":
+    app.run(port=5004, debug=True)
 
 # =========================================================
 # GLOBAL STATE
