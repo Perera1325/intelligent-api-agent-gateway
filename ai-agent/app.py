@@ -201,6 +201,15 @@ def get_metrics():
         "uptime_seconds": uptime
     })
 
+@app.route("/metrics", methods=["GET"])
+def metrics():
+    return jsonify({
+        "service": "intelligent-api-agent",
+        "requests_processed": 0,
+        "circuit_breaker_status": "closed",
+        "cache_entries": 0
+    })
+
 @app.route("/docs")
 def docs():
     return jsonify({
