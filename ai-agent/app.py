@@ -185,6 +185,14 @@ def health():
         "circuit_breakers": circuit_breakers
     })
 
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({
+        "status": "healthy",
+        "service": "ai-agent",
+        "version": "1.0.0"
+    })
+
 @app.route("/metrics")
 def get_metrics():
     uptime = round(time.time() - metrics["uptime_start"], 2)
