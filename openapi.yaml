@@ -1,0 +1,23 @@
+openapi: 3.0.0
+info:
+  title: Intelligent API Agent
+  version: 1.0.0
+
+paths:
+  /agent/optimize-delivery:
+    get:
+      summary: Optimize delivery decision
+      parameters:
+        - name: city
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: capacity
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Delivery optimization response
